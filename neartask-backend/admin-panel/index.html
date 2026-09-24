@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NearTask Admin</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --border: #e2e4e9;
+    --text: #1c1e21;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-dark: #1d4ed8;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    width: 320px;
+  }
+  .login-card h1 { font-size: 18px; margin: 0 0 4px; }
+  .login-card p { font-size: 13px; color: var(--muted); margin: 0 0 20px; }
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .btn-primary { background: var(--accent); color: white; width: 100%; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-small { background: var(--accent); color: white; padding: 6px 12px; font-size: 13px; }
+  .btn-danger { background: #fee2e2; color: var(--danger); padding: 6px 12px; font-size: 13px; }
+  .error-text { color: var(--danger); font-size: 13px; margin-top: -6px; margin-bottom: 12px; min-height: 16px; }
+
+  #app { display: none; min-height: 100vh; }
+  .layout { display: flex; min-height: 100vh; }
+  nav {
+    width: 200px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 20px 12px;
+  }
+  nav h2 { font-size: 15px; margin: 0 0 20px; padding: 0 8px; }
+  nav button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    color: var(--text);
+    font-weight: 500;
+    padding: 9px 10px;
+    border-radius: 8px;
+    margin-bottom: 2px;
+  }
+  nav button.active { background: #eef2ff; color: var(--accent); }
+  nav button:hover:not(.active) { background: #f3f4f6; }
+  main { flex: 1; padding: 28px 36px; max-width: 1000px; }
+  main h1 { font-size: 20px; margin: 0 0 4px; }
+  main .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 28px; }
+  .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .stat-card .value { font-size: 22px; font-weight: 700; }
+  .stat-card .label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  th, td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  th { background: #fafafa; color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  .empty-state { padding: 32px; text-align: center; color: var(--muted); font-size: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .badge-pending { background: #fef3c7; color: #92400e; }
+  .badge-verified { background: #dcfce7; color: #166534; }
+  .badge-rejected { background: #fee2e2; color: #991b1b; }
+  .action-row { display: flex; gap: 6px; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .logout-link { font-size: 13px; color: var(--muted); cursor: pointer; text-decoration: underline; }
+  .config-note { font-size: 12px; color: var(--muted); margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <h1>NearTask Admin</h1>
+    <p>Sign in with an admin account.</p>
+    <input id="login-phone" placeholder="Phone number" />
+    <input id="login-password" type="password" placeholder="Password" />
+    <div class="error-text" id="login-error"></div>
+    <button class="btn-primary" onclick="handleLogin()">Sign in</button>
+    <div class="config-note">API: <span id="api-base-display"></span> — edit API_BASE at the top of this file to point at your server.</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="layout">
+    <nav>
+      <h2>NearTask</h2>
+      <button class="active" data-view="dashboard" onclick="switchView('dashboard')">Dashboard</button>
+      <button data-view="withdrawals" onclick="switchView('withdrawals')">Withdrawals</button>
+      <button data-view="kyc" onclick="switchView('kyc')">KYC Review</button>
+      <button data-view="disputes" onclick="switchView('disputes')">Disputes</button>
+    </nav>
+    <main>
+      <div class="top-bar">
+        <div></div>
+        <div class="logout-link" onclick="handleLogout()">Log out</div>
+      </div>
+
+      <div id="view-dashboard">
+        <h1>Dashboard</h1>
+        <div class="subtitle">Live platform snapshot</div>
+        <div class="stat-grid" id="stat-grid"></div>
+      </div>
+
+      <div id="view-withdrawals" style="display:none">
+        <h1>Pending Withdrawals</h1>
+        <div class="subtitle">Confirm only after the transfer has actually been sent — the ledger must always match reality.</div>
+        <div id="withdrawals-content"></div>
+      </div>
+
+      <div id="view-kyc" style="display:none">
+        <h1>KYC Review</h1>
+        <div class="subtitle">Approve unlocks Verified tier, which is required for Social gigs.</div>
+        <div id="kyc-content"></div>
+      </div>
+
+      <div id="view-disputes" style="display:none">
+        <h1>Disputed Tasks</h1>
+        <div class="subtitle">Funds stay locked until you resolve — resolving triggers the same wallet movement as a normal completion or cancellation.</div>
+        <div id="disputes-content"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  // Point this at your own backend — e.g. https://api.neartask.in or http://localhost:3000
+  const API_BASE = "http://localhost:3000";
+  document.getElementById("api-base-display").textContent = API_BASE;
+
+  let token = null;
+  try { token = sessionStorage.getItem("neartask_admin_token"); } catch (e) {}
+
+  async function api(path, options = {}) {
+    const res = await fetch(API_BASE + path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: "Bearer " + token } : {}),
+        ...(options.headers || {}),
+      },
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message || ("Request failed: " + res.status));
+    }
+    return res.json();
+  }
+
+  async function handleLogin() {
+    const phone = document.getElementById("login-phone").value.trim();
+    const password = document.getElementById("login-password").value;
+    const errorEl = document.getElementById("login-error");
+    errorEl.textContent = "";
+    try {
+      const data = await api("/auth/login", { method: "POST", body: JSON.stringify({ phone, password }) });
+      token = data.accessToken;
+      try { sessionStorage.setItem("neartask_admin_token", token); } catch (e) {}
+
+      const me = await api("/users/me");
+      if (me.role !== "ADMIN") {
+        errorEl.textContent = "This account does not have admin access.";
+        token = null;
+        try { sessionStorage.removeItem("neartask_admin_token"); } catch (e) {}
+        return;
+      }
+      showApp();
+    } catch (e) {
+      errorEl.textContent = e.message || "Login failed";
+    }
+  }
+
+  function handleLogout() {
+    token = null;
+    try { sessionStorage.removeItem("neartask_admin_token"); } catch (e) {}
+    document.getElementById("app").style.display = "none";
+    document.getElementById("login-screen").style.display = "flex";
+  }
+
+  function showApp() {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    switchView("dashboard");
+  }
+
+  function switchView(view) {
+    ["dashboard", "withdrawals", "kyc", "disputes"].forEach((v) => {
+      document.getElementById("view-" + v).style.display = v === view ? "block" : "none";
+    });
+    document.querySelectorAll("nav button[data-view]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.view === view);
+    });
+    if (view === "dashboard") loadDashboard();
+    if (view === "withdrawals") loadWithdrawals();
+    if (view === "kyc") loadKyc();
+    if (view === "disputes") loadDisputes();
+  }
+
+  async function loadDashboard() {
+    const grid = document.getElementById("stat-grid");
+    grid.innerHTML = "<div class='empty-state'>Loading…</div>";
+    try {
+      const s = await api("/admin/stats");
+      grid.innerHTML = [
+        ["Total users", s.totalUsers],
+        ["Verified users", s.verifiedUsers],
+        ["Open tasks", s.openTasks],
+        ["Completed tasks", s.completedTasks],
+        ["Pending withdrawals", s.pendingWithdrawalCount],
+      ].map(([label, value]) => `
+        <div class="stat-card"><div class="value">${value}</div><div class="label">${label}</div></div>
+      `).join("");
+    } catch (e) {
+      grid.innerHTML = `<div class="empty-state">Could not load stats: ${e.message}</div>`;
+    }
+  }
+
+  async function loadWithdrawals() {
+    const el = document.getElementById("withdrawals-content");
+    el.innerHTML = "<div class='empty-state'>Loading…</div>";
+    try {
+      const rows = await api("/admin/withdrawals/pending");
+      if (!rows.length) { el.innerHTML = "<div class='empty-state'>No pending withdrawal requests.</div>"; return; }
+      el.innerHTML = `
+        <table>
+          <thead><tr><th>User</th><th>Amount</th><th>Destination</th><th>Requested</th><th></th></tr></thead>
+          <tbody>
+            ${rows.map((r) => `
+              <tr>
+                <td>${r.wallet.user.name}<br/><span style="color:var(--muted)">${r.wallet.user.phone}</span></td>
+                <td>₹${r.amount}</td>
+                <td>${(r.note || "").replace("Payout destination: ", "")}</td>
+                <td>${new Date(r.createdAt).toLocaleString()}</td>
+                <td class="action-row">
+                  <button class="btn-small" onclick="confirmPaid('${r.id}')">Mark Paid</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state">Could not load withdrawals: ${e.message}</div>`;
+    }
+  }
+
+  async function confirmPaid(transactionId) {
+    if (!confirm("Only confirm this AFTER you have actually sent the money via UPI/IMPS. Continue?")) return;
+    try {
+      await api(`/admin/withdrawals/${transactionId}/mark-paid`, { method: "POST" });
+      loadWithdrawals();
+      loadDashboard();
+    } catch (e) {
+      alert("Failed: " + e.message);
+    }
+  }
+
+  async function loadKyc() {
+    const el = document.getElementById("kyc-content");
+    el.innerHTML = "<div class='empty-state'>Loading…</div>";
+    try {
+      const rows = await api("/admin/kyc/pending");
+      if (!rows.length) { el.innerHTML = "<div class='empty-state'>No pending KYC submissions.</div>"; return; }
+      el.innerHTML = rows.map((r) => `
+        <div class="stat-card" style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;">
+            <div>
+              <strong>${r.user.name}</strong><br/>
+              <span style="color:var(--muted);font-size:13px;">${r.user.phone}${r.user.email ? " · " + r.user.email : ""}</span>
+            </div>
+            <span style="font-size:12px;color:var(--muted);">${new Date(r.createdAt).toLocaleString()}</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:12px;">
+            <a href="${resolveDocUrl(r.idDocumentUrl)}" target="_blank">
+              <img src="${resolveDocUrl(r.idDocumentUrl)}" alt="ID document" style="width:140px;height:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" />
+            </a>
+            <a href="${resolveDocUrl(r.selfieUrl)}" target="_blank">
+              <img src="${resolveDocUrl(r.selfieUrl)}" alt="Selfie" style="width:100px;height:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" />
+            </a>
+          </div>
+          <div class="action-row">
+            <button class="btn-small" onclick="reviewKyc('${r.id}', 'VERIFIED')">Approve</button>
+            <button class="btn-danger" onclick="reviewKyc('${r.id}', 'REJECTED')">Reject</button>
+          </div>
+        </div>
+      `).join("");
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state">Could not load KYC queue: ${e.message}</div>`;
+    }
+  }
+
+  // Local-storage URLs come back as "/uploads/..." (relative to the API); S3 driver
+  // returns absolute URLs already, so this only prefixes when needed.
+  function resolveDocUrl(url) {
+    return url.startsWith("http") ? url : API_BASE + url;
+  }
+
+  async function reviewKyc(submissionId, status) {
+    try {
+      await api(`/admin/kyc/${submissionId}`, { method: "PATCH", body: JSON.stringify({ status }) });
+      loadKyc();
+      loadDashboard();
+    } catch (e) {
+      alert("Failed: " + e.message);
+    }
+  }
+
+  async function loadDisputes() {
+    const el = document.getElementById("disputes-content");
+    el.innerHTML = "<div class='empty-state'>Loading…</div>";
+    try {
+      const rows = await api("/admin/tasks/disputed");
+      if (!rows.length) { el.innerHTML = "<div class='empty-state'>No disputed tasks.</div>"; return; }
+      el.innerHTML = rows.map((r) => `
+        <div class="stat-card" style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;">
+            <div>
+              <strong>${r.title}</strong><br/>
+              <span style="color:var(--muted);font-size:13px;">
+                Creator: ${r.creator.name} (${r.creator.phone}) —
+                Doer: ${r.selectedApplication ? r.selectedApplication.applicant.name : "—"}
+              </span>
+            </div>
+            <div style="font-weight:700;">₹${r.price}</div>
+          </div>
+          <p style="font-size:13px;margin:10px 0;white-space:pre-wrap;">${(r.disputeReason || "No reason given").split("\\n[Resolved")[0]}</p>
+          <div class="action-row">
+            <button class="btn-small" onclick="resolveDispute('${r.id}', 'RELEASE_TO_DOER')">Release to doer</button>
+            <button class="btn-danger" onclick="resolveDispute('${r.id}', 'REFUND_CREATOR')">Refund creator</button>
+          </div>
+        </div>
+      `).join("");
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state">Could not load disputes: ${e.message}</div>`;
+    }
+  }
+
+  async function resolveDispute(taskId, resolution) {
+    const label = resolution === "RELEASE_TO_DOER" ? "release funds to the doer" : "refund the creator in full";
+    if (!confirm(`Resolve this dispute and ${label}? This cannot be undone.`)) return;
+    try {
+      await api(`/admin/disputes/${taskId}/resolve`, { method: "POST", body: JSON.stringify({ resolution }) });
+      loadDisputes();
+      loadDashboard();
+    } catch (e) {
+      alert("Failed: " + e.message);
+    }
+  }
+
+  // Auto-login if a token already exists in this browser session
+  if (token) {
+    api("/users/me").then((me) => {
+      if (me.role === "ADMIN") showApp();
+      else handleLogout();
+    }).catch(() => handleLogout());
+  }
+</script>
+</body>
+</html>

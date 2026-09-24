@@ -1,0 +1,23 @@
+{
+  "name": "NearTask Backend",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [3000, 5432, 6379],
+  "portsAttributes": {
+    "3000": { "label": "NearTask API" },
+    "5432": { "label": "Postgres" },
+    "6379": { "label": "Redis" }
+  },
+  "postCreateCommand": "cp -n .env.example .env && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Prisma.prisma",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}
